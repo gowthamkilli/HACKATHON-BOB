@@ -17,6 +17,8 @@ export default function App() {
   const [state, dispatch] = useWitnessReducer();
   const [railTab, setRailTab] = useState<"explorer" | "search" | "scm" | "run" | "witness" | "settings">("witness");
   const [centerTab, setCenterTab] = useState<CenterTab>("editor");
+  const [savedContent, setSavedContent] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const unsubscribe = useRef<(() => void) | null>(null);
 
   const params = new URLSearchParams(window.location.search);
@@ -45,8 +47,33 @@ export default function App() {
     if (!state.repo) return;
     const { content } = await api.file(state.repo.repo_id, path, state.currentBranch);
     dispatch({ type: "OPEN_FILE", path, content });
+    setSavedContent(content);
+    setSaveStatus("idle");
     setCenterTab("editor");
   }
+
+  function handleNewFile(path: string) {
+    dispatch({ type: "OPEN_FILE", path, content: "" });
+    setSavedContent(null); // null = never saved -- always shows as unsaved until first Save
+    setSaveStatus("idle");
+    setCenterTab("editor");
+  }
+
+  async function handleSave() {
+    if (!state.repo || !state.openFilePath) return;
+    setSaveStatus("saving");
+    try {
+      await api.writeFile(state.repo.repo_id, state.currentBranch, state.openFilePath, state.openFileContent);
+      setSavedContent(state.openFileContent);
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus("idle"), 1500);
+    } catch (e) {
+      setSaveStatus("error");
+      alert(`Save failed: ${(e as Error).message}`);
+    }
+  }
+
+  const isDirty = state.openFilePath !== null && state.openFileContent !== savedContent;
 
   function handleProvenanceClick(site: string) {
     const [path] = site.split(":");
@@ -94,10 +121,11 @@ export default function App() {
             onConnected={handleRepoConnected}
             onBranchSelect={(b) => dispatch({ type: "SET_BRANCH", branch: b })}
             onFileOpen={handleFileOpen}
+            onNewFile={handleNewFile}
           />
 
           <div className="flex-1 flex flex-col min-w-0 bg-panel">
-            <div className="flex border-b border-border shrink-0">
+            <div className="flex items-center border-b border-border shrink-0">
               {(["editor", "diff"] as CenterTab[]).map((tab) => (
                 <button
                   key={tab}
@@ -106,9 +134,19 @@ export default function App() {
                     centerTab === tab ? "bg-panel text-gray-100" : "bg-chrome text-gray-500 hover:text-gray-300"
                   }`}
                 >
-                  {tab === "editor" ? state.openFilePath ?? "untitled" : "Diff: base ↔ head"}
+                  {tab === "editor" ? (state.openFilePath ?? "untitled") + (isDirty ? " •" : "") : "Diff: base ↔ head"}
                 </button>
               ))}
+              {centerTab === "editor" && state.openFilePath && (
+                <button
+                  onClick={handleSave}
+                  disabled={!isDirty || saveStatus === "saving"}
+                  title={`Save to branch "${state.currentBranch}"`}
+                  className="ml-auto mr-2 px-2.5 py-1 text-[12px] rounded bg-accent text-white font-medium hover:bg-accent/90 disabled:opacity-40 disabled:cursor-default"
+                >
+                  {saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "Saved ✓" : saveStatus === "error" ? "Retry save" : "Save"}
+                </button>
+              )}
             </div>
 
             {centerTab === "editor" ? (
