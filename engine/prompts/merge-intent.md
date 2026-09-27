@@ -22,6 +22,7 @@ SUBJECT: <qualname or guarantee id>
 CLAIM: <one sentence naming both sides of the assumption mismatch>
 EVIDENCE: <file:line in A's diff>, <file:line in B's diff>
 SEVERITY: <0-3>
+MECHANISM: <one of: bypass, weaken, multiply, reorder, widen, shadow>
 FINDING_END
 
 If the two diffs don't actually interact, return nothing — a false cross-branch story is worse

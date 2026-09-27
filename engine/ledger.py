@@ -129,9 +129,9 @@ def _parse_ledger_model_output(text: str) -> list[dict]:
         raise ValueError("no GUARANTEE_START/GUARANTEE_END blocks found")
     parsed = []
     for block in blocks:
-        gid = re.search(r"ID:\s*(\S+)", block)
-        statement = re.search(r"STATEMENT:\s*(.+)", block)
-        why = re.search(r"WHY:\s*(.+)", block)
+        gid = re.search(r"ID:[ \t]*(\S+)", block)
+        statement = re.search(r"STATEMENT:[ \t]*(.+)", block)
+        why = re.search(r"WHY:[ \t]*(.*)", block)
         if not gid or not statement:
             raise ValueError(f"malformed guarantee block: {block!r}")
         parsed.append({

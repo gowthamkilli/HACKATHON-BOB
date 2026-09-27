@@ -86,6 +86,36 @@ exact reason (`test_live_watsonx_call_returns_parseable_block`,
 `python -m pytest engine/tests/test_agents.py -v` — the two skips should turn into real passes,
 and `--record` against a live call will populate `engine/fixtures/` honestly.
 
+## M7 — blast radius: mechanism proven, live judgement pending credentials
+
+`engine/blast.py` wires the 5 parallel agents (callers/contract/state/history/merge-intent) for
+real: `callgraph.py`'s computed structure feeds `callers`, actual base/head function source
+feeds `contract`, `ChangeSpec.state_touched` feeds `state`, real `git log` output feeds
+`history`, real `git diff` text for both branches feeds `merge-intent`. The shared
+FINDING_START/END grammar and its evidence-required-or-dropped rule are tested directly
+(`test_parse_findings_extracts_blocks_and_requires_evidence` caught a real regex bug — greedy
+`\s*` swallowing the newline after an empty `EVIDENCE:` field and eating the next line — fixed
+in both `blast.py` and `ledger.py`). Concurrency is proven the same way as M5 (5 fake-but-real-
+latency agents, wall clock under 1.6x one agent's delay). The spec's real acceptance check
+(merge-intent's finding actually naming the limiter and the retry path on pair 1, with evidence
+in both branches) needs a live model's judgement and cannot be faked — `skipif`-guarded in
+`test_blast.py::test_merge_intent_names_limiter_and_retry_on_pair1`, pending `.env` credentials.
+
+## M8 — mechanism classification is the model's judgement, extracted honestly
+
+`engine/delta.py`'s `mechanism` field is never guessed by the engine from case-specific
+keywords (that would trip `test_no_case_specific_logic.py`, correctly). Instead, `merge-intent.md`
+now asks the model to name one of the spec's own six taxonomy words in a `MECHANISM:` grammar
+field (§4's own vocabulary — bypass/weaken/multiply/reorder/widen/shadow — is data the spec
+defines, not a benchmark-case secret), and `_extract_mechanism` matches on word *stems* (e.g.
+`multipl` catches "multiplies"/"multiplying") since a real model's claim will inflect the word,
+not necessarily use the bare infinitive. Ranking and top-5 dedup are tested with hand-constructed
+`BlastFinding`s (the same pattern M7's concurrency test uses), not a live model. The spec's own
+M8 acceptance (top candidate on pair 1 derived from a *real* blast run, plus the rename test —
+mechanically renaming every symbol in a proven case and confirming detection survives) both need
+an actual live PROVEN result from M9 first, so they're deferred to when credentials land and M9
+produces a real proof — tracking this in one place rather than duplicating the note per milestone.
+
 ## M2 — branch pair 1 (G1, multiply): team-a/rate-limit + team-b/retry
 
 - `main` = `42b345d`, `team-a/rate-limit` = `cb87c6d`, `team-b/retry` = `2c39687`.
