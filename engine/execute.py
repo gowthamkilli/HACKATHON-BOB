@@ -67,6 +67,7 @@ def run_test(worktree: Path, test_file: Path, timeout: int = 120) -> ExecResult:
     (§9, M9's `confirm.py`), enforced here rather than trusted from the prompt.
     """
     worktree = Path(worktree)
+    baseline_status = _git_status_lines(worktree)  # a --no-commit merge can already be "dirty"
     tests_dir = worktree / "tests"
     tests_dir.mkdir(parents=True, exist_ok=True)
     dest = tests_dir / Path(test_file).name
@@ -86,12 +87,12 @@ def run_test(worktree: Path, test_file: Path, timeout: int = 120) -> ExecResult:
     except subprocess.TimeoutExpired:
         _kill_tree(proc)
         elapsed = time.monotonic() - start
-        touched = _check_touched_app_source(worktree)
+        touched = _check_touched_app_source(worktree, baseline_status)
         return ExecResult(status="TIMEOUT", exit_code=None, stderr_excerpt="",
                            elapsed_s=elapsed, touched_app_source=touched)
 
     combined = (stdout or "") + "\n" + (stderr or "")
-    touched = _check_touched_app_source(worktree)
+    touched = _check_touched_app_source(worktree, baseline_status)
 
     if exit_code == 0:
         status = "PASS"
@@ -106,11 +107,18 @@ def run_test(worktree: Path, test_file: Path, timeout: int = 120) -> ExecResult:
     )
 
 
-def _check_touched_app_source(worktree: Path) -> bool:
+def _git_status_lines(worktree: Path) -> set[str]:
     result = subprocess.run(
         ["git", "status", "--porcelain"], cwd=worktree, capture_output=True, text=True,
     )
-    for line in result.stdout.splitlines():
+    return set(result.stdout.splitlines())
+
+
+def _check_touched_app_source(worktree: Path, baseline: set[str]) -> bool:
+    """A `--no-commit --no-ff` merge worktree can already be "dirty" before any test runs — only
+    lines that are NEW relative to that baseline count as something *the test* touched."""
+    new_lines = _git_status_lines(worktree) - baseline
+    for line in new_lines:
         path_part = line[3:].strip()
         if not path_part.startswith("tests/") and not path_part.startswith("tests\\"):
             return True

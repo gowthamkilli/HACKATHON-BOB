@@ -1,10 +1,10 @@
 {
-  "milestone": "M9",
+  "milestone": "M10",
   "status": "in_progress",
   "last_acceptance_result": {
-    "milestone": "M8",
-    "result": "PASS (mechanism-only using hand-constructed findings; live top-candidate + rename test deferred to M9+credentials)",
-    "detail": "engine/tests/test_delta.py: mechanism extraction from model's own stated taxonomy word, delta computation, top-5 dedup ranking all pass."
+    "milestone": "M9",
+    "result": "PASS (mechanism proven against real corpus; live end-to-end run + rename test deferred to credentials)",
+    "detail": "engine/tests/test_race_confirm.py: confirm_lane correctly PROVES a hand-written G1 stand-in test against real team-a/rate-limit (base) + merge (head) worktrees; correctly rejects tautology and over-broad candidates; race.py's 'prose is a lost lane' enforced. Found and fixed a real touched_app_source false-positive bug (merge worktrees are dirty before any test runs -- baseline snapshot fix)."
   },
-  "notes": "Building engine/race.py + engine/confirm.py -- the race and proof gate, the core of the product. This is the highest-value remaining engine milestone."
+  "notes": "M10 (fix.py) next, then prioritizing M12 (server) + M13 (frontend) per user's explicit request, then M11/M14 as time allows."
 }

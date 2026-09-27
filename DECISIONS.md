@@ -116,6 +116,30 @@ mechanically renaming every symbol in a proven case and confirming detection sur
 an actual live PROVEN result from M9 first, so they're deferred to when credentials land and M9
 produces a real proof — tracking this in one place rather than duplicating the note per milestone.
 
+## M9 — the race and the proof gate: real bug caught and fixed
+
+`engine/race.py` (lane generation/parsing, "prose is a lost lane" enforced) and
+`engine/confirm.py` (the full PROVEN/DISPROVEN/INCONCLUSIVE/INVALID gate: errored_on_base,
+touched_app_source, tautology, flaky, signature_mismatch, over_broad-via-a-real-control-run)
+are both built and proven against the **real corpus**, using a hand-written stand-in test
+(reused from M2/M3's own G1 ground truth, explicitly labeled as not model output) as the input
+to `confirm_lane` — this exercises the actual classification logic against real worktrees, not
+a mock.
+
+**Real bug found and fixed:** the first run of `test_confirm_lane_proves_g1_on_real_corpus`
+came back `touched_app_source` for a test that never touched anything — `execute.run_test`'s
+`git status --porcelain` check was comparing against a *clean* baseline, but a
+`--no-commit --no-ff` merge worktree is already "dirty" (the merge's own staged changes) before
+any test ever runs. Fixed by snapshotting `git status` right after worktree creation and
+diffing against that baseline, so only changes the test itself introduced count. This is
+exactly the kind of self-inflicted false positive the spec's own M3 acceptance test would have
+caught eventually; better to catch it here with a passing race than during a live run.
+
+Live-model-dependent parts (an actual `witness premortem` end-to-end run producing one real
+PROVEN lane; the §3 rename test, which needs a real proven case to rename) are deferred to when
+`.env` credentials arrive — `test_live_premortem_on_pair1_yields_exactly_one_proven_lane` is the
+tracking test.
+
 ## M2 — branch pair 1 (G1, multiply): team-a/rate-limit + team-b/retry
 
 - `main` = `42b345d`, `team-a/rate-limit` = `cb87c6d`, `team-b/retry` = `2c39687`.
