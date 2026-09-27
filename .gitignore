@@ -1,0 +1,18 @@
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+.wt/
+samples/.verify-*/
+# samples/orderworks is its own nested git repository (branches are the whole point of the
+# benchmark fixture) — intentionally not tracked as a submodule or otherwise by this repo.
+samples/orderworks/
+runs/*.jsonl
+runs/*.json
+!runs/.gitkeep
+node_modules/
+studio/dist/
+.venv/
+*.egg-info/
+.coverage
+htmlcov/

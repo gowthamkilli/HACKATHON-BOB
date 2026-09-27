@@ -1,0 +1,10 @@
+{
+  "milestone": "M6",
+  "status": "in_progress",
+  "last_acceptance_result": {
+    "milestone": "M5",
+    "result": "PASS (2 checks skipped pending WATSONX credentials, honestly, not faked)",
+    "detail": "engine/tests/test_agents.py: 4 passed (concurrency proof, retry-once contract, MockProvider fixture-or-raise). 2 skipped: live watsonx call, mock-replay-of-live-recording -- both need .env credentials the user has not yet supplied."
+  },
+  "notes": "Building engine/intake.py + engine/callgraph.py + engine/surface.py (ChangeSpec, shared surface, call graph). Pure AST/git work, no LLM needed."
+}
