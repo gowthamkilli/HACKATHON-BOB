@@ -59,10 +59,10 @@ def run_agent(
     attempt_prompt = rendered
     last_error = None
     for attempt in range(2):
-        completion = provider.complete(
-            system=system, user=attempt_prompt, max_tokens=max_tokens, temperature=temperature,
-        )
         try:
+            completion = provider.complete(
+                system=system, user=attempt_prompt, max_tokens=max_tokens, temperature=temperature,
+            )
             parsed = parse_fn(completion.text)
             result = AgentResult(
                 agent=name, ok=True, parsed=parsed, raw_text=completion.text,
@@ -75,7 +75,9 @@ def run_agent(
                     "elapsed_s": completion.elapsed_s,
                 })
             return result
-        except Exception as e:  # parse failure — retry exactly once
+        except Exception as e:  # parse failure OR the provider itself failing (e.g. a mock
+            # FixtureMissing) — either way, retry exactly once, then this agent contributed
+            # nothing. A missing fixture must degrade to silence, never crash the pipeline.
             last_error = str(e)
             attempt_prompt = (
                 f"{rendered}\n\nYour previous response failed to parse: {last_error}\n"

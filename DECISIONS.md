@@ -171,6 +171,33 @@ than asserting a tighter bound the limiter doesn't actually guarantee. A product
 likely prefer a sliding-window or token-bucket limiter for a tighter bound; that's a legitimate
 follow-up, not something this milestone silently glossed over.
 
+## M12 — pipeline wiring: two real findings, both fixed
+
+`engine/pipeline.py` ties intake → ledger → blast → delta → race → confirm → (fix) → report
+together; `engine/server.py` exposes it over the §9 API contract with SSE. Both are real,
+runnable code, smoke-tested end to end (not just unit-tested in isolation).
+
+**Real bug found and fixed:** `run_agent` only wrapped `parse_fn(completion.text)` in its
+retry-on-failure logic, not the `provider.complete()` call itself — so `MockProvider.complete()`
+raising `FixtureMissing` (its documented, honest behavior on a cache miss) propagated all the way
+up and **crashed the entire pipeline** instead of degrading to "this agent contributed nothing."
+Fixed by moving the `complete()` call inside the same try/except as parsing — a missing fixture
+now correctly produces silence (zero blast findings, zero candidates, zero lanes, an honest
+"undefended" list), never a crash. This is the mock-safety mechanism actually working as the
+spec intends: `python -c "from engine.pipeline import run_premortem; run_premortem(...,
+provider_name='mock')"` against pair 1 runs to completion and reports nothing invented.
+
+**Real finding, not a bug — a consequence of the corpus's own git history:** running the
+now-fixed pipeline still showed all 10 guarantees as `covered_by_test: None`/undefended, which
+contradicted M4's finding (only G1 uncovered). Cause: the 8 feature branches were created
+*before* M4's "docs: add uniform Enforced-at" commit landed on `main`, so `git log`-wise those
+branches genuinely don't have the annotation the ledger's static parser looks for — the pipeline
+was reporting the true state of the ref it was given, correctly. Fixed by merging that docs-only
+commit into all 8 base branches (`git merge`, zero conflict, re-verified with
+`bench/verify_corpus.py` — still all green_alone/zero_conflict/green_merged). This is a normal,
+legitimate "backport a docs update to feature branches" operation, done because a real ledger
+tool would hit the same gap against any real repo's older branches.
+
 ## M2 — branch pair 1 (G1, multiply): team-a/rate-limit + team-b/retry
 
 - `main` = `42b345d`, `team-a/rate-limit` = `cb87c6d`, `team-b/retry` = `2c39687`.

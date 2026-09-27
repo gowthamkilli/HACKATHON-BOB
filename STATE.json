@@ -1,10 +1,10 @@
 {
-  "milestone": "M12",
+  "milestone": "M13",
   "status": "in_progress",
   "last_acceptance_result": {
-    "milestone": "M10",
+    "milestone": "M12",
     "result": "PASS",
-    "detail": "engine/tests/test_fix.py: apply_patch + attempt_fix proven against real corpus with a hand-authored (via real git diff) patch. Found/fixed a real git-apply CRLF/autocrlf bug (--ignore-whitespace) and disclosed a real fixed-window rate limiter burst-tolerance limitation rather than hiding it."
+    "detail": "engine/pipeline.py + engine/server.py smoke-tested end-to-end. Fixed a real crash bug (FixtureMissing propagating past run_agent's retry logic instead of degrading to silence). Fixed a real corpus gap (8 base branches predated the Enforced-at docs commit; backported via git merge, re-verified all 8 pairs still pass)."
   },
-  "notes": "M11 (postmortem) deferred -- prioritizing M12 (server) + M13 (frontend) per user's explicit request to see the UI. Will return to M11/M14 (bench+demo script) if time remains."
+  "notes": "Now building studio/ (Vite + React + TS + Tailwind + Monaco), the front end -- user's explicit top priority. Backend server runs separately (uvicorn engine.server:app)."
 }
