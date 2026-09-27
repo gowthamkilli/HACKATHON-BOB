@@ -1,10 +1,10 @@
 {
-  "milestone": "M10",
+  "milestone": "M12",
   "status": "in_progress",
   "last_acceptance_result": {
-    "milestone": "M9",
-    "result": "PASS (mechanism proven against real corpus; live end-to-end run + rename test deferred to credentials)",
-    "detail": "engine/tests/test_race_confirm.py: confirm_lane correctly PROVES a hand-written G1 stand-in test against real team-a/rate-limit (base) + merge (head) worktrees; correctly rejects tautology and over-broad candidates; race.py's 'prose is a lost lane' enforced. Found and fixed a real touched_app_source false-positive bug (merge worktrees are dirty before any test runs -- baseline snapshot fix)."
+    "milestone": "M10",
+    "result": "PASS",
+    "detail": "engine/tests/test_fix.py: apply_patch + attempt_fix proven against real corpus with a hand-authored (via real git diff) patch. Found/fixed a real git-apply CRLF/autocrlf bug (--ignore-whitespace) and disclosed a real fixed-window rate limiter burst-tolerance limitation rather than hiding it."
   },
-  "notes": "M10 (fix.py) next, then prioritizing M12 (server) + M13 (frontend) per user's explicit request, then M11/M14 as time allows."
+  "notes": "M11 (postmortem) deferred -- prioritizing M12 (server) + M13 (frontend) per user's explicit request to see the UI. Will return to M11/M14 (bench+demo script) if time remains."
 }

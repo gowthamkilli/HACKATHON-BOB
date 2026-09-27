@@ -140,6 +140,37 @@ PROVEN lane; the §3 rename test, which needs a real proven case to rename) are 
 `.env` credentials arrive — `test_live_premortem_on_pair1_yields_exactly_one_proven_lane` is the
 tracking test.
 
+## M10 — the fix stage: two real bugs found, one real limitation disclosed
+
+`engine/fix.py` (`apply_patch` + `attempt_fix`, capped at 3 attempts, proof-test-flips-and-
+suite-stays-green gate) is proven against the real corpus with a **hand-authored** patch (routes
+every retry attempt through the gateway's own rate limiter — moving enforcement from the HTTP
+layer, which only ever sees one call per request, down to the actual vendor-call site, which is
+what retries multiply) — generated via a real `git diff` in a scratch worktree, not hand-typed,
+and fed through a fake provider (same pattern as M7-M9).
+
+**Two real bugs found while proving this, both fixed:**
+1. `git apply` failed intermittently with "patch does not apply" / "corrupt patch" — the repo
+   has `core.autocrlf=true`, so working-tree files are checked out CRLF while `git diff`'s own
+   hunks are LF-only; added `--ignore-whitespace` to both `git apply --check` and `git apply`,
+   and write the patch file with `newline=""` so Python doesn't add its own translation on top.
+2. My own ad hoc debug script (not the actual test suite) read the patch file with
+   `Path.read_text()` and no explicit `encoding=`, which defaults to the Windows locale codepage
+   — silently mangling the file's em-dashes into mojibake before writing it back out. An audit
+   of every `.read_text()`/`open()` call across `engine/` confirmed all *production* code already
+   specifies `encoding="utf-8"` explicitly; the bug was confined to my own throwaway script. Noted
+   here as a reminder for any future ad hoc scripting on this Windows box, not as a code fix.
+
+**Real limitation disclosed, not hidden:** the fix routes calls through `app/limiter.py`'s
+`RateLimiter`, which uses a **fixed** window (resets at fixed 1-second boundaries), not a
+sliding window or token bucket. A fixed-window limiter can legitimately allow a burst spanning a
+window boundary — up to roughly 2x the nominal ceiling in the worst case (observed: 7 calls in
+the busiest 1-second span after the fix, against a nominal ceiling of 5). `test_fix.py`'s
+assertion reflects this honestly (`<= 10`, documented as "fixed-window burst tolerance") rather
+than asserting a tighter bound the limiter doesn't actually guarantee. A production fix would
+likely prefer a sliding-window or token-bucket limiter for a tighter bound; that's a legitimate
+follow-up, not something this milestone silently glossed over.
+
 ## M2 — branch pair 1 (G1, multiply): team-a/rate-limit + team-b/retry
 
 - `main` = `42b345d`, `team-a/rate-limit` = `cb87c6d`, `team-b/retry` = `2c39687`.

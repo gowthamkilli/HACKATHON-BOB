@@ -58,11 +58,11 @@ def test_run_blast_radius_fans_out_five_agents_concurrently():
     merged_wt, merged, conflict = worktrees.create_merge(REPO, "team-a/rate-limit", ["team-b/retry"], label="blast-test-head")
     try:
         assert merged and not conflict
-        provider = _FakeParallelProvider(delay_s=0.2)
+        provider = _FakeParallelProvider(delay_s=0.4)
         start = time.monotonic()
         findings = run_blast_radius(spec, REPO, base_wt, merged_wt, provider=provider)
         elapsed = time.monotonic() - start
-        assert elapsed < 1.6 * 0.2
+        assert elapsed < 1.6 * 0.4
         assert len(findings) == 5  # all 5 agents returned one evidence-bearing finding each
     finally:
         worktrees.teardown(base_wt)

@@ -1,0 +1,29 @@
+diff --git a/app/gateway.py b/app/gateway.py
+index 0fa11ea..89e9a59 100644
+--- a/app/gateway.py
++++ b/app/gateway.py
+@@ -12,6 +12,8 @@ import time
+ from dataclasses import dataclass
+ from typing import Callable, Optional
+ 
++from app.limiter import RateLimiter
++
+ 
+ class GatewayTimeout(Exception):
+     """The vendor did not respond in time. Transient — safe to retry the logical charge."""
+@@ -27,6 +29,7 @@ class ChargeResult:
+ _call_lock = threading.Lock()
+ _call_log: list[float] = []  # monotonic timestamps of every real vendor call, for tests to inspect
+ _fault_injector: Optional[Callable[[], bool]] = None  # test hook: return True to raise GatewayTimeout
++_GATEWAY_LIMITER = RateLimiter(max_per_second=5)
+ 
+ 
+ def set_fault_injector(fn: Optional[Callable[[], bool]]) -> None:
+@@ -52,6 +55,7 @@ def call_log_snapshot() -> list[float]:
+ def _vendor_call(amount_cents: int) -> ChargeResult:
+     """The actual network call to the payment vendor. Every invocation of this function is one
+     unit against the vendor's rate limit — this is the count ADR-001's ceiling is about."""
++    _GATEWAY_LIMITER.acquire()
+     with _call_lock:
+         _call_log.append(time.monotonic())
+     if _fault_injector is not None and _fault_injector():
