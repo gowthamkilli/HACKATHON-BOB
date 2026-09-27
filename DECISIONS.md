@@ -198,6 +198,45 @@ commit into all 8 base branches (`git merge`, zero conflict, re-verified with
 legitimate "backport a docs update to feature branches" operation, done because a real ledger
 tool would hit the same gap against any real repo's older branches.
 
+## M13 — Witness Studio: real frontend, wired to the real backend, two real bugs found
+
+`studio/` is a real Vite + React 18 + TypeScript + Tailwind + `@monaco-editor/react` app (no
+component library, per spec), matching the reference IBM Bob layout: left icon rail, Explorer
+(file tree + Connect Folder + Branches list), center Monaco editor / Diff tab / streaming
+Terminal pane, right WITNESS panel (stage list, blast-radius agent rows, ledger table, race lane
+cards, finding card, fix diff, composer), bottom status bar. `npx tsc -b --noEmit` is clean.
+
+**Verified live, not just built:** ran `npm run dev` + `uvicorn engine.server:app` side by side
+in the browser pane, connected `samples/orderworks`, browsed the real file tree, opened
+`app/gateway.py` in Monaco (real syntax highlighting), switched branches via the real
+`git branch` list, then actually **started a live premortem run** (`team-a/rate-limit` +
+`team-b/retry`, `--provider mock`) from the Composer and watched it complete end-to-end over
+real SSE: intake → blast (5 agents, each honestly reporting "0 findings" since no fixture
+exists) → delta → race, terminal streaming real lines
+(`[blast] callers -> contributed nothing (...)`, `[report] run complete`), ledger table showing
+real G1 (uncovered, amber) vs G2 (covered, green) chips. This is the Honesty Invariant visible
+in the UI: a mock run with no fixtures correctly renders **silence**, not a fabricated finding.
+
+**Two real bugs found while doing this, both fixed:**
+1. A genuine **race condition**: the client received the `run_end` SSE event and immediately
+   `GET /api/run/{id}`, but the server's background thread hadn't finished writing the full
+   `Run` object into its in-memory store yet, so the client briefly received the placeholder
+   `{run_id, status}` shape and rendered it as if it were a complete `Run` — crashing on
+   `undefined.findings.defeated`. Fixed with a short client-side retry
+   (`fetchFinishedRun`, up to 8 x 250ms) that waits for the `ledger` key to actually be present
+   before dispatching `RUN_FINISHED`, rather than papering over it with more optional chaining
+   alone (added that too, as defense in depth, but the retry fixes the actual cause).
+2. `WitnessPanel` originally took a fixed `head` prop with nothing in the UI to set it — a
+   `base`+`with` branch selector was missing entirely from the design as first coded. Added a
+   `<select>` populated from the real connected repo's branch list, wired through
+   `App.tsx` → `WitnessPanel`, which is what made the live run above possible to trigger at all.
+
+Not yet done: WebSocket-free SSE reconnect-with-gap-detection (`onGap`) is wired but untested
+against an actual dropped connection; replay mode (`?run=<id>`) is implemented
+(`api/events.ts:replayRun`) but not yet exercised against a real stored `.jsonl` run since no
+live-model run has been recorded. `studio/README`-level polish (favicon, build script smoke
+test) also pending.
+
 ## M2 — branch pair 1 (G1, multiply): team-a/rate-limit + team-b/retry
 
 - `main` = `42b345d`, `team-a/rate-limit` = `cb87c6d`, `team-b/retry` = `2c39687`.

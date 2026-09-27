@@ -1,10 +1,10 @@
 {
   "milestone": "M13",
-  "status": "in_progress",
+  "status": "done_verified_live",
   "last_acceptance_result": {
-    "milestone": "M12",
+    "milestone": "M13",
     "result": "PASS",
-    "detail": "engine/pipeline.py + engine/server.py smoke-tested end-to-end. Fixed a real crash bug (FixtureMissing propagating past run_agent's retry logic instead of degrading to silence). Fixed a real corpus gap (8 base branches predated the Enforced-at docs commit; backported via git merge, re-verified all 8 pairs still pass)."
+    "detail": "studio/ built, tsc clean, run live in the browser pane against the real backend: connected samples/orderworks, browsed real file tree, opened a file in Monaco, switched branches, started a live premortem run (mock provider) over real SSE end-to-end (intake->blast->delta->race->report), ledger table showed real G1(uncovered)/G2(covered) status. Found and fixed a real client/server race condition (run_end event arriving before the server finished storing the full Run object) and a missing base/head branch selector."
   },
-  "notes": "Now building studio/ (Vite + React + TS + Tailwind + Monaco), the front end -- user's explicit top priority. Backend server runs separately (uvicorn engine.server:app)."
+  "notes": "Remaining: M11 (postmortem recon agents, stubbed), M14 (bench narrative + demo script, needs honest numbers reflecting M4's real coverage finding). Both need live watsonx credentials to be more than mechanism-only. Next natural step if continuing: M14's bench/RESULTS.md + METRICS.md + docs/demo-script.md, all honestly reporting mock-mode limitations."
 }

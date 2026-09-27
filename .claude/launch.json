@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "witness-studio",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "studio", "run", "dev"],
+      "port": 5173
+    },
+    {
+      "name": "witness-server",
+      "runtimeExecutable": ".venv\\Scripts\\python.exe",
+      "runtimeArgs": ["-m", "uvicorn", "engine.server:app", "--port", "8787"],
+      "port": 8787
+    }
+  ]
+}
